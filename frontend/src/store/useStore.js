@@ -68,6 +68,10 @@ const useStore = create((set, get) => ({
   scanProgress: null,
   setScanProgress: (v) => set({ scanProgress: v }),
 
+  // Auto-tag progress
+  autoTagProgress: null, // { current, total, filename?, tags? }
+  setAutoTagProgress: (v) => set({ autoTagProgress: v }),
+
 }))
 
 export default useStore

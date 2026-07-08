@@ -144,6 +144,7 @@ export default function MediaModal() {
           {modalFile.dimensions && <span>해상도: {modalFile.width} x {modalFile.height}</span>}
           {modalFile.duration && <span>길이: {Math.round(modalFile.duration)}s</span>}
           <div className="modal-tags">
+            <span style={{color:'var(--text-secondary)',fontWeight:500,whiteSpace:'nowrap',marginRight:2}}>태그</span>
             {localTags.map(tag => (
               <span key={tag} className="tag-chip">
                 {tag}
@@ -155,7 +156,7 @@ export default function MediaModal() {
             <input
               className="tag-input"
               type="text"
-              placeholder={localTags.length ? '' : '태그 추가...'}
+              placeholder="태그 입력 후 Enter..."
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleAddTag() }}

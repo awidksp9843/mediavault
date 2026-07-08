@@ -19,12 +19,19 @@ from backend.exiftool_worker import exiftool_queue
 from backend.thumbnail_gen.generator import get_thumbnail_absolute_path, generate_thumbnail
 from backend.scanner import scan_workspace
 from backend.websocket_manager import ws_manager
+from backend.auto_tag import auto_tag_files, yolo_model
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api", tags=["files"])
 
 
 # ── Pydantic Models ──
+
+class AutoTagRequest(BaseModel):
+    file_ids: list[int]
+
+class AutoTagAllRequest(BaseModel):
+    workspace_id: int
 
 class WorkspaceCreate(BaseModel):
     absolute_path: str
@@ -492,6 +499,30 @@ async def toggle_favorite(file_id: int, db: Session = Depends(get_db)):
         await exiftool_queue.enqueue(full_path, metadata)
 
     return {"file_id": file_id, "is_favorite": file_record.is_favorite}
+
+
+# ── Auto-tag endpoints ──
+
+@router.post("/files/auto-tag")
+async def auto_tag(body: AutoTagRequest):
+    """Run YOLO auto-tagging on specific image files."""
+    asyncio.create_task(auto_tag_files(body.file_ids))
+    return {"message": "Auto-tag started", "file_count": len(body.file_ids)}
+
+@router.post("/files/auto-tag-all")
+async def auto_tag_all(body: AutoTagAllRequest, db: Session = Depends(get_db)):
+    """Run YOLO auto-tagging on ALL image files in a workspace."""
+    image_ids = [
+        row[0] for row in db.query(File.id).filter(
+            File.workspace_id == body.workspace_id,
+            File.is_deleted == False,
+            File.media_type == "image",
+        ).all()
+    ]
+    if not image_ids:
+        return {"message": "No image files to tag", "file_count": 0}
+    asyncio.create_task(auto_tag_files(image_ids))
+    return {"message": "Auto-tag started", "file_count": len(image_ids)}
 
 
 # ── Folder structure endpoint ──

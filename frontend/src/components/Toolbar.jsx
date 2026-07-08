@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star, Tag } from 'lucide-react'
+import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star, Tag, Sparkles } from 'lucide-react'
 import useStore from '../store/useStore'
-import { addTags } from '../api'
+import { addTags, autoTagFiles, autoTagAllFiles } from '../api'
 
 export default function Toolbar({ onRefresh }) {
   const {
@@ -10,8 +10,10 @@ export default function Toolbar({ onRefresh }) {
     filterMediaType, setFilterMediaType,
     filterFavorites, setFilterFavorites,
     selectedFileIds, clearSelection, selectAll, files, totalCount,
+    activeWorkspaceId,
   } = useStore()
 
+  const autoTagProgress = useStore(s => s.autoTagProgress)
   const [showTagInput, setShowTagInput] = useState(false)
   const [batchTagText, setBatchTagText] = useState('')
 
@@ -28,6 +30,25 @@ export default function Toolbar({ onRefresh }) {
     }
   }
 
+  const handleAutoTag = async () => {
+    if (selectedFileIds.size === 0 || autoTagProgress) return
+    try {
+      const fileIds = Array.from(selectedFileIds)
+      await autoTagFiles(fileIds)
+    } catch (e) {
+      console.error('Auto-tag failed', e)
+    }
+  }
+
+  const handleAutoTagAll = async () => {
+    if (!activeWorkspaceId || autoTagProgress) return
+    try {
+      await autoTagAllFiles(activeWorkspaceId)
+    } catch (e) {
+      console.error('Auto-tag all failed', e)
+    }
+  }
+
   return (
     <div className="toolbar">
       <div className="toolbar-left">
@@ -36,7 +57,7 @@ export default function Toolbar({ onRefresh }) {
           <>
             <span className="toolbar-selected">{selectedFileIds.size}개 선택됨</span>
             <div className="toolbar-divider" />
-            <button className="btn-icon" onClick={() => setShowTagInput(!showTagInput)} title="태그 추가">
+            <button className={`btn-icon ${showTagInput ? 'active' : ''}`} onClick={() => setShowTagInput(!showTagInput)} title="태그 추가">
               <Tag size={14} />
             </button>
             {showTagInput && (
@@ -52,6 +73,10 @@ export default function Toolbar({ onRefresh }) {
                 <button className="btn-primary btn-sm" onClick={handleBatchTag}>추가</button>
               </div>
             )}
+            <div className="toolbar-divider" />
+            <button className="btn-icon" onClick={handleAutoTag} disabled={!!autoTagProgress} title="자동 태깅 (YOLO)">
+              <Sparkles size={14} />
+            </button>
           </>
         )}
       </div>
@@ -103,6 +128,14 @@ export default function Toolbar({ onRefresh }) {
             title={sortOrder === 'asc' ? '오름차순' : '내림차순'}
           >
             <ArrowUpDown size={14} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button className="btn-icon" onClick={handleAutoTagAll} disabled={!!autoTagProgress} title="모든 이미지 자동 태깅 (YOLO)">
+            <Sparkles size={14} />
           </button>
         </div>
 

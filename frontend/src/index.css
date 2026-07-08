@@ -403,6 +403,8 @@ body {
 
 .btn-icon:hover { background: var(--bg-hover); color: var(--text); }
 .btn-icon.active { background: var(--bg-active); color: var(--accent); }
+.btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-icon:disabled:hover { background: transparent; }
 
 /* ── File View ── */
 .file-view {
@@ -654,33 +656,42 @@ body {
 .modal-footer {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 8px 16px;
+  gap: 6px 12px;
+  padding: 10px 16px;
   border-top: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   align-items: center;
+}
+
+.modal-footer > span {
+  white-space: nowrap;
 }
 
 .modal-tags {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
   flex: 1;
-  min-width: 120px;
+  min-width: 200px;
+  padding: 4px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .tag-chip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  gap: 4px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
   border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
-  color: var(--text);
+  padding: 3px 8px 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .tag-chip-remove {
@@ -689,21 +700,21 @@ body {
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--text-disabled);
+  color: rgba(255,255,255,0.7);
   cursor: pointer;
   padding: 0;
   line-height: 1;
 }
 
-.tag-chip-remove:hover { color: var(--danger); }
+.tag-chip-remove:hover { color: #fff; }
 
 .tag-input {
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   outline: none;
-  min-width: 60px;
+  min-width: 80px;
   flex: 1;
 }
 
@@ -712,21 +723,73 @@ body {
 .toolbar-tag-input {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .toolbar-tag-input input {
   background: var(--bg);
-  border: 1px solid var(--border);
+  border: 2px solid var(--accent);
   border-radius: var(--radius);
-  padding: 3px 8px;
+  padding: 6px 12px;
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   outline: none;
-  width: 180px;
+  width: 220px;
 }
 
-.toolbar-tag-input input:focus { border-color: var(--accent); }
+.toolbar-tag-input input:focus { border-color: var(--accent-hover); box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.2); }
+
+/* ── Auto-tag Banner ── */
+.auto-tag-banner {
+  background: linear-gradient(90deg, #7c3aed, #5b8def);
+  color: #fff;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.auto-tag-info {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.auto-tag-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tag-chip-sm {
+  display: inline-flex;
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.auto-tag-bar {
+  flex: 1;
+  min-width: 100px;
+  height: 6px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.auto-tag-fill {
+  height: 100%;
+  background: rgba(255,255,255,0.8);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.auto-tag-done {
+  background: #22c55e;
+}
 
 /* ── Context Menu ── */
 .context-menu {

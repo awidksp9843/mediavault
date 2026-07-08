@@ -13,7 +13,7 @@ export default function App() {
     activeWorkspaceId, files, setFiles, appendFiles, nextCursor,
     isLoadingFiles, setLoadingFiles, totalCount, setScanProgress,
     sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, searchQuery,
-    viewMode, modalFile, scanProgress,
+    viewMode, modalFile, scanProgress, autoTagProgress, setAutoTagProgress,
   } = useStore()
 
   const loadingRef = useRef(false)
@@ -96,12 +96,33 @@ export default function App() {
           const msg = JSON.parse(event.data)
           const events = msg.type === 'batch' ? msg.events : [msg]
           for (const e of events) {
-            const type = e.type === 'batch' ? e.event : e.type || e.event
+            const type = e.type === 'batch' ? e.event : e.event || e.type
             const data = e.data || e
             if (type === 'scan_progress') {
               setScanProgress(data)
             } else if (type === 'scan_complete') {
               setScanProgress(null)
+              loadFiles()
+            } else if (type === 'auto_tag_started') {
+              setAutoTagProgress({ current: 0, total: data.total })
+            } else if (type === 'auto_tag_progress') {
+              setAutoTagProgress({ current: data.current, total: data.total, filename: data.filename, tags: data.tags })
+              if (data.tags?.length > 0) {
+                useStore.setState(s => ({
+                  files: s.files.map(f =>
+                    f.id === data.file_id ? { ...f, tags: data.tags } : f
+                  ),
+                  modalFile: s.modalFile?.id === data.file_id
+                    ? { ...s.modalFile, tags: data.tags } : s.modalFile,
+                }))
+              }
+            } else if (type === 'auto_tag_completed') {
+              const errs = data.errors || 0
+              const msg = errs > 0
+                ? `자동 태깅 완료 (${errs}개 오류)`
+                : `자동 태깅 완료 (${data.total}개)`
+              setAutoTagProgress({ done: true, message: msg })
+              setTimeout(() => setAutoTagProgress(null), 3000)
               loadFiles()
             } else if (['file_moved', 'file_deleted', 'file_created', 'file_modified', 'tags_updated'].includes(type)) {
               loadFiles()
@@ -149,6 +170,28 @@ export default function App() {
           <div className="scan-banner">
             검색 중... {scanProgress.indexed || 0} / {scanProgress.total || 0}개 파일
             {scanProgress.phase && ` (${scanProgress.phase})`}
+          </div>
+        )}
+        {autoTagProgress && (
+          <div className={`auto-tag-banner ${autoTagProgress.done ? 'auto-tag-done' : ''}`}>
+            {autoTagProgress.done ? (
+              <div className="auto-tag-info">{autoTagProgress.message}</div>
+            ) : (
+              <>
+                <div className="auto-tag-info">
+                  자동 태깅 중... {autoTagProgress.current} / {autoTagProgress.total}
+                  {autoTagProgress.filename && ` (${autoTagProgress.filename})`}
+                </div>
+                {autoTagProgress.tags?.length > 0 && (
+                  <div className="auto-tag-tags">
+                    {autoTagProgress.tags.map(t => <span key={t} className="tag-chip-sm">{t}</span>)}
+                  </div>
+                )}
+                <div className="auto-tag-bar">
+                  <div className="auto-tag-fill" style={{ width: `${(autoTagProgress.current / autoTagProgress.total) * 100}%` }} />
+                </div>
+              </>
+            )}
           </div>
         )}
         <div className="file-view">

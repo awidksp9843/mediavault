@@ -71,6 +71,16 @@ export async function addTags(fileIds, tags, action = 'add') {
   return data
 }
 
+export async function autoTagFiles(fileIds) {
+  const { data } = await api.post('/api/files/auto-tag', { file_ids: fileIds })
+  return data
+}
+
+export async function autoTagAllFiles(workspaceId) {
+  const { data } = await api.post('/api/files/auto-tag-all', { workspace_id: workspaceId })
+  return data
+}
+
 export async function fetchFolders(workspaceId) {
   const { data } = await api.get('/api/folders', { params: { workspace_id: workspaceId } })
   return data
