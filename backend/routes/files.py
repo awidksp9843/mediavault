@@ -154,6 +154,7 @@ def list_files(
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     media_type: str | None = Query(None, regex="^(image|video)$"),
     folder: str | None = Query(None, description="Filter by folder relative path"),
+    is_favorite: bool | None = Query(None, description="Filter by favorite status"),
     db: Session = Depends(get_db),
 ):
     """List files with cursor-based pagination to avoid large offset DB locks."""
@@ -164,6 +165,9 @@ def list_files(
 
     if media_type:
         query = query.filter(File.media_type == media_type)
+
+    if is_favorite is not None:
+        query = query.filter(File.is_favorite == is_favorite)
 
     if folder is not None:
         if folder == "":
@@ -324,15 +328,35 @@ def search_files(
 
 @router.get("/thumbnails/{file_id}")
 def serve_thumbnail(file_id: int, db: Session = Depends(get_db)):
-    """Serve WebP thumbnail image."""
+    """Serve WebP thumbnail image. Generates on-the-fly if missing."""
     file_record = db.query(File).filter(File.id == file_id).first()
-    if not file_record or not file_record.thumbnail_path:
-        raise HTTPException(status_code=404, detail="Thumbnail not found")
+    if not file_record:
+        raise HTTPException(status_code=404, detail="File not found")
 
-    thumb_path = get_thumbnail_absolute_path(file_record.thumbnail_path)
-    if not thumb_path.exists():
-        raise HTTPException(status_code=404, detail="Thumbnail file missing")
+    if file_record.thumbnail_path:
+        thumb_path = get_thumbnail_absolute_path(file_record.thumbnail_path)
+        if thumb_path.exists():
+            return FileResponse(str(thumb_path), media_type="image/webp")
 
+    workspace = db.query(Workspace).filter(Workspace.id == file_record.workspace_id).first()
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    full_path = Path(workspace.absolute_path) / file_record.relative_path
+    if not full_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    thumb_result = generate_thumbnail(full_path, file_record.id, file_record.media_type)
+    if not thumb_result:
+        raise HTTPException(status_code=500, detail="Thumbnail generation failed")
+
+    thumb_rel, phash_value = thumb_result
+    file_record.thumbnail_path = thumb_rel
+    if phash_value:
+        file_record.phash = phash_value
+    db.commit()
+
+    thumb_path = get_thumbnail_absolute_path(thumb_rel)
     return FileResponse(str(thumb_path), media_type="image/webp")
 
 

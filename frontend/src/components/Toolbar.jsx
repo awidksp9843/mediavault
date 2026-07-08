@@ -1,4 +1,4 @@
-import { Grid3X3, List, ArrowUpDown, Filter, Image, Video } from 'lucide-react'
+import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star } from 'lucide-react'
 import useStore from '../store/useStore'
 
 export default function Toolbar({ onRefresh }) {
@@ -6,6 +6,7 @@ export default function Toolbar({ onRefresh }) {
     viewMode, setViewMode,
     sortBy, setSortBy, sortOrder, setSortOrder,
     filterMediaType, setFilterMediaType,
+    filterFavorites, setFilterFavorites,
     selectedFileIds, clearSelection, selectAll, files, totalCount,
   } = useStore()
 
@@ -37,6 +38,12 @@ export default function Toolbar({ onRefresh }) {
             onClick={() => setFilterMediaType('video')} title="동영상만"
           >
             <Video size={14} />
+          </button>
+          <button
+            className={`btn-icon ${filterFavorites ? 'active' : ''}`}
+            onClick={() => setFilterFavorites(filterFavorites ? null : true)} title="즐겨찾기만"
+          >
+            <Star size={14} />
           </button>
         </div>
 

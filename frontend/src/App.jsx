@@ -12,7 +12,7 @@ export default function App() {
   const {
     activeWorkspaceId, files, setFiles, appendFiles, nextCursor,
     isLoadingFiles, setLoadingFiles, totalCount, setScanProgress,
-    sortBy, sortOrder, filterMediaType, filterFolder, searchQuery,
+    sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, searchQuery,
     viewMode, modalFile, scanProgress,
   } = useStore()
 
@@ -30,6 +30,7 @@ export default function App() {
         sortOrder,
         mediaType: filterMediaType,
         folder: filterFolder || undefined,
+        isFavorite: filterFavorites || undefined,
       }
       const result = await fetchFiles(activeWorkspaceId, params)
       if (append) {
@@ -43,7 +44,7 @@ export default function App() {
       setLoadingFiles(false)
       loadingRef.current = false
     }
-  }, [activeWorkspaceId, nextCursor, sortBy, sortOrder, filterMediaType, filterFolder, setFiles, appendFiles, setLoadingFiles])
+  }, [activeWorkspaceId, nextCursor, sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, setFiles, appendFiles, setLoadingFiles])
 
   const handleSearch = useCallback(async () => {
     if (!activeWorkspaceId || !searchQuery.trim()) {
@@ -71,7 +72,7 @@ export default function App() {
     } else {
       loadFiles()
     }
-  }, [activeWorkspaceId, sortBy, sortOrder, filterMediaType, filterFolder, searchQuery])
+  }, [activeWorkspaceId, sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, searchQuery])
 
   const handleLoadMore = useCallback(() => {
     if (nextCursor && !isLoadingFiles) {

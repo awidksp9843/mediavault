@@ -78,9 +78,7 @@ export default function FileGrid({ files, onLoadMore, hasMore }) {
   useEffect(() => {
     const map = {}
     for (const f of files) {
-      if (f.thumbnail_path) {
-        map[f.id] = getThumbnailUrl(f.id)
-      }
+      map[f.id] = getThumbnailUrl(f.id)
     }
     setThumbnails(map)
   }, [files])

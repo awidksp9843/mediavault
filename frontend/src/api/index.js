@@ -23,11 +23,12 @@ export async function deleteWorkspace(workspaceId) {
   return data
 }
 
-export async function fetchFiles(workspaceId, { cursor, limit = 50, sortBy = 'media_created_at', sortOrder = 'desc', mediaType, folder } = {}) {
+export async function fetchFiles(workspaceId, { cursor, limit = 50, sortBy = 'media_created_at', sortOrder = 'desc', mediaType, folder, isFavorite } = {}) {
   const params = { workspace_id: workspaceId, limit, sort_by: sortBy, sort_order: sortOrder }
   if (cursor != null) params.cursor = cursor
   if (mediaType) params.media_type = mediaType
   if (folder !== undefined) params.folder = folder
+  if (isFavorite === true) params.is_favorite = true
   const { data } = await api.get('/api/files', { params })
   return data
 }

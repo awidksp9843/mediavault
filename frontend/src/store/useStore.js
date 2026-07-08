@@ -32,11 +32,13 @@ const useStore = create((set, get) => ({
   sortBy: 'media_created_at',
   sortOrder: 'desc',
   filterMediaType: null,
+  filterFavorites: null, // null=all, true=favorites only
   filterFolder: '',
   searchQuery: '',
   setSortBy: (sortBy) => set({ sortBy }),
   setSortOrder: (sortOrder) => set({ sortOrder }),
   setFilterMediaType: (v) => set({ filterMediaType: v }),
+  setFilterFavorites: (v) => set({ filterFavorites: v }),
   setFilterFolder: (v) => set({ filterFolder: v }),
   setSearchQuery: (v) => set({ searchQuery: v }),
 
