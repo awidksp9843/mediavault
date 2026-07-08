@@ -653,12 +653,80 @@ body {
 
 .modal-footer {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   padding: 8px 16px;
   border-top: 1px solid var(--border);
   font-size: 11px;
   color: var(--text-secondary);
+  align-items: center;
 }
+
+.modal-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.tag-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-disabled);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.tag-chip-remove:hover { color: var(--danger); }
+
+.tag-input {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  outline: none;
+  min-width: 60px;
+  flex: 1;
+}
+
+.tag-input::placeholder { color: var(--text-disabled); }
+
+.toolbar-tag-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-tag-input input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3px 8px;
+  color: var(--text);
+  font-size: 11px;
+  outline: none;
+  width: 180px;
+}
+
+.toolbar-tag-input input:focus { border-color: var(--accent); }
 
 /* ── Context Menu ── */
 .context-menu {

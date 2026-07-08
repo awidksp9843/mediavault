@@ -103,7 +103,7 @@ export default function App() {
             } else if (type === 'scan_complete') {
               setScanProgress(null)
               loadFiles()
-            } else if (['file_moved', 'file_deleted', 'file_created', 'file_modified'].includes(type)) {
+            } else if (['file_moved', 'file_deleted', 'file_created', 'file_modified', 'tags_updated'].includes(type)) {
               loadFiles()
             }
           }

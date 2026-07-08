@@ -1,24 +1,20 @@
 """
 MediaVault - ExifTool Worker
 Async queue-based ExifTool process manager with atomic writes.
-Reads/writes XMP:MediaVault JSON metadata in files.
+Reads/writes tags (XMP-dc:subject) and favorite (XMP:Label) metadata.
 """
 import asyncio
-import json
 import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 from backend.config import logger
 from backend.sync_engine.watcher import blacklist
 
 
-# Default MediaVault XMP JSON structure
 DEFAULT_METADATA = {
-    "version": "1.0",
     "is_favorite": False,
-    "tags": [],
+    "tags": "",
 }
 
 
@@ -28,14 +24,14 @@ def _check_exiftool_available() -> bool:
 
 
 def read_xmp_metadata(file_path: Path) -> dict | None:
-    """Read XMP:MediaVault JSON metadata from a file using ExifTool."""
+    """Read tags (XMP-dc:subject) and favorite (XMP:Label) from a file."""
     if not _check_exiftool_available():
         logger.warning("ExifTool not found in PATH. Metadata read skipped.")
         return None
 
     try:
         result = subprocess.run(
-            ["exiftool", "-json", "-XMP:MediaVault", str(file_path)],
+            ["exiftool", "-json", "-XMP-dc:subject", "-XMP:Label", str(file_path)],
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
@@ -43,9 +39,13 @@ def read_xmp_metadata(file_path: Path) -> dict | None:
 
         data = json.loads(result.stdout)
         if data and len(data) > 0:
-            raw = data[0].get("MediaVault", "")
-            if raw:
-                return json.loads(raw) if isinstance(raw, str) else raw
+            entry = data[0]
+            tags_str = entry.get("Subject", "") or ""
+            label = entry.get("Label", "") or ""
+            return {
+                "is_favorite": label in ("1", "true", "favorite"),
+                "tags": tags_str,
+            }
         return None
 
     except Exception as e:
@@ -55,7 +55,7 @@ def read_xmp_metadata(file_path: Path) -> dict | None:
 
 def write_xmp_metadata(file_path: Path, metadata: dict) -> bool:
     """
-    Write XMP:MediaVault JSON metadata to a file using ExifTool.
+    Write tags (XMP-dc:subject) and favorite (XMP:Label) to a file.
     Uses atomic write: writes to temp file first, then replaces original.
     Registers file in blacklist to prevent Watchdog infinite loop.
     """
@@ -63,49 +63,36 @@ def write_xmp_metadata(file_path: Path, metadata: dict) -> bool:
         logger.warning("ExifTool not found in PATH. Metadata write skipped.")
         return False
 
-    # Validate metadata against schema
-    if "version" not in metadata:
-        metadata["version"] = "1.0"
-    if "is_favorite" not in metadata:
-        metadata["is_favorite"] = False
-    if "tags" not in metadata:
-        metadata["tags"] = []
+    tags_str = metadata.get("tags", "")
+    is_fav = metadata.get("is_favorite", False)
+    label = "1" if is_fav else ""
 
     try:
-        # Register in blacklist to prevent Watchdog loop
         blacklist.add(file_path)
 
-        # Create temp copy
         temp_dir = file_path.parent
         temp_path = temp_dir / f".mediavault_tmp_{file_path.name}"
 
         shutil.copy2(str(file_path), str(temp_path))
 
-        # Write metadata to temp file
-        json_str = json.dumps(metadata, ensure_ascii=False)
-        result = subprocess.run(
-            [
-                "exiftool",
-                "-overwrite_original",
-                f"-XMP:MediaVault={json_str}",
-                str(temp_path),
-            ],
-            capture_output=True, text=True, timeout=30,
-        )
+        args = ["exiftool", "-overwrite_original",
+                f"-XMP-dc:subject={tags_str}",
+                f"-XMP:Label={label}",
+                str(temp_path)]
+
+        result = subprocess.run(args, capture_output=True, text=True, timeout=30)
 
         if result.returncode != 0:
             logger.error("ExifTool write failed: %s", result.stderr)
             temp_path.unlink(missing_ok=True)
             return False
 
-        # Atomic replace: only replace original if temp write succeeded
         shutil.move(str(temp_path), str(file_path))
-        logger.debug("XMP metadata written to %s", file_path)
+        logger.debug("Metadata written to %s", file_path)
         return True
 
     except Exception as e:
         logger.error("Atomic write failed for %s: %s", file_path, e)
-        # Cleanup temp file on failure
         temp_path = file_path.parent / f".mediavault_tmp_{file_path.name}"
         temp_path.unlink(missing_ok=True)
         return False

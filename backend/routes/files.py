@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import logger
 from backend.database import File, Workspace, Tag, FileTag, get_db, SessionLocal
+from backend.exiftool_worker import exiftool_queue
 from backend.thumbnail_gen.generator import get_thumbnail_absolute_path, generate_thumbnail
 from backend.scanner import scan_workspace
 from backend.websocket_manager import ws_manager
@@ -471,7 +472,7 @@ async def delete_file(file_id: int, hard: bool = Query(False), db: Session = Dep
 
 
 @router.patch("/files/{file_id}/favorite")
-def toggle_favorite(file_id: int, db: Session = Depends(get_db)):
+async def toggle_favorite(file_id: int, db: Session = Depends(get_db)):
     """Toggle favorite status of a file."""
     file_record = db.query(File).filter(File.id == file_id, File.is_deleted == False).first()
     if not file_record:
@@ -479,6 +480,17 @@ def toggle_favorite(file_id: int, db: Session = Depends(get_db)):
 
     file_record.is_favorite = not file_record.is_favorite
     db.commit()
+
+    workspace = db.query(Workspace).filter(Workspace.id == file_record.workspace_id).first()
+    if workspace:
+        full_path = Path(workspace.absolute_path) / file_record.relative_path
+        current_tags = [ft.tag.name for ft in file_record.file_tags if ft.tag]
+        metadata = {
+            "is_favorite": file_record.is_favorite,
+            "tags": ",".join(current_tags),
+        }
+        await exiftool_queue.enqueue(full_path, metadata)
+
     return {"file_id": file_id, "is_favorite": file_record.is_favorite}
 
 

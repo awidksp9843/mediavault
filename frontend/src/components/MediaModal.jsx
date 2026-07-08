@@ -1,21 +1,26 @@
 import { useCallback, useEffect, useState } from 'react'
 import { X, ChevronLeft, ChevronRight, Download, Star } from 'lucide-react'
 import useStore from '../store/useStore'
-import { getMediaUrl, toggleFavorite } from '../api'
+import { getMediaUrl, toggleFavorite, addTags } from '../api'
 
 export default function MediaModal() {
-  const { modalFile, closeModal, files, toggleSelectFile } = useStore()
+  const { modalFile, closeModal, files } = useStore()
   const [imgError, setImgError] = useState(false)
+  const [tagInput, setTagInput] = useState('')
+  const [localTags, setLocalTags] = useState([])
 
   useEffect(() => {
     setImgError(false)
+    setTagInput('')
+    setLocalTags(modalFile?.tags || [])
   }, [modalFile?.id])
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') closeModal()
     if (e.key === 'ArrowLeft') navigate(-1)
     if (e.key === 'ArrowRight') navigate(1)
-  }, [modalFile, files, closeModal])
+    if (e.key === 'Enter' && tagInput.trim()) handleAddTag()
+  }, [modalFile, files, closeModal, tagInput])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -29,17 +34,57 @@ export default function MediaModal() {
     const next = files[(idx + dir + files.length) % files.length]
     useStore.setState({ modalFile: next })
     setImgError(false)
+    setLocalTags(next.tags || [])
+    setTagInput('')
   }
 
   const handleToggleFav = async () => {
     if (!modalFile) return
     try {
       const res = await toggleFavorite(modalFile.id)
+      const state = useStore.getState()
+      const newFiles = state.files.map(f =>
+        f.id === modalFile.id ? { ...f, is_favorite: res.is_favorite } : f
+      )
       useStore.setState({
+        files: newFiles,
         modalFile: { ...modalFile, is_favorite: res.is_favorite },
       })
     } catch (e) {
       console.error('Failed to toggle favorite', e)
+    }
+  }
+
+  const updateFilesInStore = (fileId, updated) => {
+    const state = useStore.getState()
+    const newFiles = state.files.map(f => f.id === fileId ? { ...f, tags: updated } : f)
+    useStore.setState({ files: newFiles, modalFile: { ...state.modalFile, tags: updated } })
+  }
+
+  const handleAddTag = async () => {
+    const tag = tagInput.trim().toLowerCase()
+    if (!tag || !modalFile) return
+    if (localTags.includes(tag)) { setTagInput(''); return }
+    try {
+      await addTags([modalFile.id], [tag])
+      const updated = [...localTags, tag]
+      setLocalTags(updated)
+      updateFilesInStore(modalFile.id, updated)
+      setTagInput('')
+    } catch (e) {
+      console.error('Failed to add tag', e)
+    }
+  }
+
+  const handleRemoveTag = async (tag) => {
+    if (!modalFile) return
+    try {
+      await addTags([modalFile.id], [tag], 'remove')
+      const updated = localTags.filter(t => t !== tag)
+      setLocalTags(updated)
+      updateFilesInStore(modalFile.id, updated)
+    } catch (e) {
+      console.error('Failed to remove tag', e)
     }
   }
 
@@ -98,9 +143,24 @@ export default function MediaModal() {
           <span>크기: {modalFile.size ? formatSize(modalFile.size) : '-'}</span>
           {modalFile.dimensions && <span>해상도: {modalFile.width} x {modalFile.height}</span>}
           {modalFile.duration && <span>길이: {Math.round(modalFile.duration)}s</span>}
-          {modalFile.tags?.length > 0 && (
-            <span>태그: {modalFile.tags.join(', ')}</span>
-          )}
+          <div className="modal-tags">
+            {localTags.map(tag => (
+              <span key={tag} className="tag-chip">
+                {tag}
+                <button className="tag-chip-remove" onClick={() => handleRemoveTag(tag)}>
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+            <input
+              className="tag-input"
+              type="text"
+              placeholder={localTags.length ? '' : '태그 추가...'}
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddTag() }}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from backend.config import logger
 from backend.database import File, Tag, FileTag, Workspace, get_db
-from backend.exiftool_worker import exiftool_queue, read_xmp_metadata
+from backend.exiftool_worker import exiftool_queue
 from backend.websocket_manager import ws_manager
 
 router = APIRouter(prefix="/api", tags=["tags"])
@@ -105,12 +105,10 @@ async def bulk_tag_files(body: TagBulkRequest, db: Session = Depends(get_db)):
 
         full_path = Path(workspace.absolute_path) / file_record.relative_path
 
-        # Build metadata JSON
         current_tags = [ft.tag.name for ft in file_record.file_tags if ft.tag]
         metadata = {
-            "version": "1.0",
             "is_favorite": file_record.is_favorite,
-            "tags": current_tags,
+            "tags": ",".join(current_tags),
         }
 
         await exiftool_queue.enqueue(full_path, metadata)

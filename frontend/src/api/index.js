@@ -66,8 +66,8 @@ export async function toggleFavorite(fileId) {
   return data
 }
 
-export async function addTags(fileIds, tags) {
-  const { data } = await api.post('/api/files/tags', { file_ids: fileIds, tags })
+export async function addTags(fileIds, tags, action = 'add') {
+  const { data } = await api.post('/api/files/tags', { file_ids: fileIds, tags, action })
   return data
 }
 
