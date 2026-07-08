@@ -5,7 +5,6 @@ import FileGrid from './components/FileGrid'
 import FileListView from './components/FileList'
 import MediaModal from './components/MediaModal'
 import ContextMenu from './components/ContextMenu'
-import AIPanel from './components/AIPanel'
 import { fetchFiles, searchFiles } from './api'
 import useStore from './store/useStore'
 
@@ -14,7 +13,7 @@ export default function App() {
     activeWorkspaceId, files, setFiles, appendFiles, nextCursor,
     isLoadingFiles, setLoadingFiles, totalCount, setScanProgress,
     sortBy, sortOrder, filterMediaType, filterFolder, searchQuery,
-    viewMode, modalFile, scanProgress, setAiProgress, setAiDownloadProgress,
+    viewMode, modalFile, scanProgress,
   } = useStore()
 
   const loadingRef = useRef(false)
@@ -103,11 +102,6 @@ export default function App() {
             } else if (type === 'scan_complete') {
               setScanProgress(null)
               loadFiles()
-            } else if (type === 'ai_progress') {
-              setAiProgress(data)
-              if (data.phase === 'complete') loadFiles()
-            } else if (type === 'ai_download_progress') {
-              setAiDownloadProgress(data)
             } else if (['file_moved', 'file_deleted', 'file_created', 'file_modified'].includes(type)) {
               loadFiles()
             }
@@ -165,7 +159,7 @@ export default function App() {
           ) : files.length === 0 ? (
             <div className="empty-state">
               <p>파일이 없습니다</p>
-              <p className="text-sm">워크스페이스를 추가하거나 기존 항목을 검색하세요</p>
+              <p className="text-sm">워크스페이스를 추가하세요</p>
             </div>
           ) : viewMode === 'grid' ? (
             <FileGrid files={files} onLoadMore={handleLoadMore} hasMore={hasMore} />
@@ -174,7 +168,6 @@ export default function App() {
           )}
         </div>
       </main>
-      <AIPanel />
       {modalFile && <MediaModal />}
       <ContextMenu />
     </div>

@@ -42,11 +42,11 @@ export async function searchFiles(workspaceId, { query, person, tag, mediaType, 
   return data
 }
 
-export async function getThumbnailUrl(fileId) {
+export function getThumbnailUrl(fileId) {
   return `${API_BASE}/api/thumbnails/${fileId}`
 }
 
-export async function getMediaUrl(fileId) {
+export function getMediaUrl(fileId) {
   return `${API_BASE}/api/media/${fileId}`
 }
 
@@ -75,14 +75,6 @@ export async function fetchFolders(workspaceId) {
   return data
 }
 
-export async function getAiStatus() {
-  const { data } = await api.get('/api/ai/status')
-  return data
-}
 
-export async function analyzeWorkspace(workspaceId) {
-  const { data } = await api.post(`/api/ai/analyze/${workspaceId}`)
-  return data
-}
 
 export default api

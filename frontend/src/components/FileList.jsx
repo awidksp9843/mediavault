@@ -6,9 +6,8 @@ import { getThumbnailUrl } from '../api'
 
 const ROW_HEIGHT = 48
 
-const RowComponent = ({ data, rowIndex, style }) => {
-  const { files, selectedFileIds, thumbnails, toggleSelectFile, openModal, showContextMenu } = data
-  const file = files[rowIndex]
+const RowComponent = ({ index, style, files, selectedFileIds, thumbnails, toggleSelectFile, openModal, showContextMenu }) => {
+  const file = files[index]
   if (!file) return null
   const isSelected = selectedFileIds.has(file.id)
   const thumbUrl = thumbnails[file.id]

@@ -8,13 +8,13 @@ import shutil
 from pathlib import Path
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from fastapi.responses import FileResponse, StreamingResponse
-from sqlalchemy import func, or_, and_
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.config import logger
-from backend.database import File, Workspace, Tag, FileTag, Person, FilePerson, get_db, SessionLocal
+from backend.database import File, Workspace, Tag, FileTag, get_db, SessionLocal
 from backend.thumbnail_gen.generator import get_thumbnail_absolute_path, generate_thumbnail
 from backend.scanner import scan_workspace
 from backend.websocket_manager import ws_manager
@@ -89,7 +89,7 @@ def list_workspaces(db: Session = Depends(get_db)):
 
 
 @router.post("/workspaces")
-async def create_workspace(body: WorkspaceCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def create_workspace(body: WorkspaceCreate, db: Session = Depends(get_db)):
     """Register a new workspace and trigger initial scan."""
     ws_path = Path(body.absolute_path).resolve()
     if not ws_path.exists():
@@ -113,7 +113,7 @@ async def create_workspace(body: WorkspaceCreate, background_tasks: BackgroundTa
     loop = asyncio.get_event_loop()
     from backend.sync_engine.watcher import watcher_service
     watcher_service.start_watching(ws.id, ws_path, loop)
-    background_tasks.add_task(asyncio.ensure_future, scan_workspace(ws.id))
+    asyncio.create_task(scan_workspace(ws.id))
 
     return {"id": ws.id, "absolute_path": str(ws_path), "alias": ws.alias}
 
@@ -134,12 +134,12 @@ def delete_workspace(workspace_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/workspaces/{workspace_id}/scan")
-async def rescan_workspace(workspace_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def rescan_workspace(workspace_id: int, db: Session = Depends(get_db)):
     """Trigger a rescan of a workspace."""
     ws = db.query(Workspace).filter(Workspace.id == workspace_id).first()
     if not ws:
         raise HTTPException(status_code=404, detail="Workspace not found")
-    background_tasks.add_task(asyncio.ensure_future, scan_workspace(workspace_id))
+    asyncio.create_task(scan_workspace(workspace_id))
     return {"message": "Scan started"}
 
 
@@ -291,16 +291,6 @@ def search_files(
             tagged_ids = [ft.file_id for ft in
                           db.query(FileTag.file_id).filter(FileTag.tag_id == tag_obj.id).all()]
             base_query = base_query.filter(File.id.in_(tagged_ids))
-        else:
-            return {"files": [], "total_count": 0}
-
-    # Person filter
-    if person:
-        person_obj = db.query(Person).filter(Person.name == person).first()
-        if person_obj:
-            person_file_ids = [fp.file_id for fp in
-                               db.query(FilePerson.file_id).filter(FilePerson.person_id == person_obj.id).all()]
-            base_query = base_query.filter(File.id.in_(person_file_ids))
         else:
             return {"files": [], "total_count": 0}
 

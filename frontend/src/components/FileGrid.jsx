@@ -8,8 +8,7 @@ const CARD_WIDTH = 180
 const CARD_HEIGHT = 200
 const GAP = 8
 
-const CellComponent = ({ data, rowIndex, columnIndex, style }) => {
-  const { files, columnCount, selectedFileIds, thumbnails, toggleSelectFile, openModal, showContextMenu } = data
+const CellComponent = ({ columnIndex, rowIndex, style, files, columnCount, selectedFileIds, thumbnails, toggleSelectFile, openModal, showContextMenu }) => {
   const index = rowIndex * columnCount + columnIndex
   if (index >= files.length) return null
   const file = files[index]
@@ -20,8 +19,8 @@ const CellComponent = ({ data, rowIndex, columnIndex, style }) => {
     <div
       style={{
         ...style,
-        left: style.left + GAP,
-        top: style.top + GAP,
+        left: (style.left ?? 0) + GAP,
+        top: (style.top ?? 0) + GAP,
         width: style.width - GAP,
         height: style.height - GAP,
       }}

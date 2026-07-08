@@ -45,7 +45,7 @@ export default function MediaModal() {
 
   if (!modalFile) return null
 
-  const mediaUrl = `${getMediaUrl(modalFile.id)}`
+  const mediaUrl = getMediaUrl(modalFile.id)
 
   return (
     <div className="modal-overlay" onClick={closeModal}>

@@ -111,7 +111,6 @@ async def bulk_tag_files(body: TagBulkRequest, db: Session = Depends(get_db)):
             "version": "1.0",
             "is_favorite": file_record.is_favorite,
             "tags": current_tags,
-            "persons": [fp.person.name for fp in file_record.file_persons if fp.person and fp.person.name],
         }
 
         await exiftool_queue.enqueue(full_path, metadata)
@@ -148,14 +147,6 @@ def get_file_metadata(file_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="File not found")
 
     tags = [ft.tag.name for ft in file_record.file_tags if ft.tag]
-    persons = []
-    for fp in file_record.file_persons:
-        if fp.person:
-            persons.append({
-                "name": fp.person.name,
-                "bounding_box": fp.bounding_box,
-                "confidence": fp.confidence_score,
-            })
 
     return {
         "id": file_record.id,
@@ -175,5 +166,4 @@ def get_file_metadata(file_id: int, db: Session = Depends(get_db)):
         "media_created_at": file_record.media_created_at.isoformat() if file_record.media_created_at else None,
         "sync_status": file_record.sync_status,
         "tags": tags,
-        "persons": persons,
     }

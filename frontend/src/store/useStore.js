@@ -66,13 +66,6 @@ const useStore = create((set, get) => ({
   scanProgress: null,
   setScanProgress: (v) => set({ scanProgress: v }),
 
-  // AI
-  aiStatus: null,
-  aiProgress: null,
-  aiDownloadProgress: null,
-  setAiStatus: (v) => set({ aiStatus: v }),
-  setAiProgress: (v) => set({ aiProgress: v }),
-  setAiDownloadProgress: (v) => set({ aiDownloadProgress: v }),
 }))
 
 export default useStore

@@ -65,7 +65,6 @@ class File(Base):
 
     workspace = relationship("Workspace", back_populates="files")
     file_tags = relationship("FileTag", back_populates="file", cascade="all, delete-orphan")
-    file_persons = relationship("FilePerson", back_populates="file", cascade="all, delete-orphan")
 
 
 class Tag(Base):
@@ -86,27 +85,6 @@ class FileTag(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     file = relationship("File", back_populates="file_tags")
     tag = relationship("Tag", back_populates="file_tags")
-
-
-class Person(Base):
-    __tablename__ = "persons"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=True)
-    representative_encoding = Column(Text, nullable=True)  # JSON-encoded face vector
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    file_persons = relationship("FilePerson", back_populates="person", cascade="all, delete-orphan")
-
-
-class FilePerson(Base):
-    __tablename__ = "file_persons"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    file_id = Column(Integer, ForeignKey("files.id"), nullable=False)
-    person_id = Column(Integer, ForeignKey("persons.id"), nullable=False)
-    bounding_box = Column(Text, nullable=True)  # JSON: {"x": ..., "y": ..., "w": ..., "h": ...}
-    confidence_score = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    file = relationship("File", back_populates="file_persons")
-    person = relationship("Person", back_populates="file_persons")
 
 
 # ════════════════════════════════════════════

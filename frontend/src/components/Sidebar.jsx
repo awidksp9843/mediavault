@@ -11,24 +11,35 @@ export default function Sidebar() {
 
   const [showAdd, setShowAdd] = useState(false)
   const [newPath, setNewPath] = useState('')
-  const [newAlias, setNewAlias] = useState('')
   const fileInputRef = useRef(null)
 
-  const handleBrowse = () => fileInputRef.current?.click()
+  const handleBrowse = () => {
+    fileInputRef.current?.click()
+  }
 
   const handleFolderSelect = (e) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      if (files[0].path) {
-        const fullPath = files[0].path
-        const folderPath = fullPath.substring(0, fullPath.lastIndexOf('\\'))
-        setNewPath(folderPath)
-      } else {
-        const relPath = files[0].webkitRelativePath
-        setNewPath(relPath.split('/')[0])
+      const f = files[0]
+      if (f.path) {
+        setNewPath(f.path.substring(0, f.path.lastIndexOf('\\')))
       }
     }
     e.target.value = ''
+  }
+
+  const handleAddWorkspace = async () => {
+    if (!newPath.trim()) return
+    try {
+      const ws = await createWorkspace(newPath.trim())
+      setNewPath('')
+      setShowAdd(false)
+      await loadWorkspaces()
+      setActiveWorkspace(ws.id)
+    } catch (e) {
+      console.error('Failed to create workspace', e)
+      alert('워크스페이스를 추가할 수 없습니다: ' + (e.response?.data?.detail || e.message))
+    }
   }
 
   const loadWorkspaces = useCallback(async () => {
@@ -51,19 +62,6 @@ export default function Sidebar() {
     }
   }, [activeWorkspaceId, setFolders])
 
-  const handleAddWorkspace = async () => {
-    if (!newPath) return
-    try {
-      await createWorkspace(newPath, newAlias || undefined)
-      setNewPath('')
-      setNewAlias('')
-      setShowAdd(false)
-      await loadWorkspaces()
-    } catch (e) {
-      console.error('Failed to create workspace', e)
-    }
-  }
-
   const handleDeleteWorkspace = async (id) => {
     try {
       await deleteWorkspace(id)
@@ -78,7 +76,7 @@ export default function Sidebar() {
       <div className="sidebar-header">
         <HardDrive size={18} />
         <span>워크스페이스</span>
-        <button className="btn-icon ml-auto" onClick={() => setShowAdd(!showAdd)} title="워크스페이스 추가">
+        <button className="btn-icon ml-auto" onClick={() => { setShowAdd(!showAdd); setNewPath('') }} title="워크스페이스 추가">
           <Plus size={16} />
         </button>
       </div>
@@ -88,7 +86,7 @@ export default function Sidebar() {
           <div style={{ display: 'flex', gap: 6 }}>
             <input
               type="text"
-              placeholder="폴더 경로"
+              placeholder="폴더 경로 (예: C:\Users\...)"
               value={newPath}
               onChange={(e) => setNewPath(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddWorkspace()}
@@ -96,15 +94,8 @@ export default function Sidebar() {
             />
             <button className="btn btn-secondary btn-sm" onClick={handleBrowse}>탐색</button>
           </div>
-          <input
-            type="text"
-            placeholder="별칭 (선택사항)"
-            value={newAlias}
-            onChange={(e) => setNewAlias(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddWorkspace()}
-          />
           <button className="btn btn-primary btn-sm" onClick={handleAddWorkspace}>추가</button>
-          <input ref={fileInputRef} type="file" webkitdirectory directory style={{ display: 'none' }} onChange={handleFolderSelect} />
+          <input ref={fileInputRef} type="file" webkitdirectory="" directory="" style={{ display: 'none' }} onChange={handleFolderSelect} />
         </div>
       )}
 

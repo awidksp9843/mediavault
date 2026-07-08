@@ -19,7 +19,6 @@ DEFAULT_METADATA = {
     "version": "1.0",
     "is_favorite": False,
     "tags": [],
-    "persons": [],
 }
 
 

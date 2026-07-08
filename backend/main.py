@@ -14,8 +14,7 @@ from backend.websocket_manager import ws_manager
 from backend.exiftool_worker import exiftool_queue
 from backend.sync_engine.integrity import check_all_workspaces
 from backend.sync_engine.watcher import watcher_service
-from backend.routes import files, tags, ai
-from backend.ai_workers.manager import ai_manager
+from backend.routes import files, tags
 
 
 @asynccontextmanager
@@ -27,14 +26,6 @@ async def lifespan(app: FastAPI):
     # Initialize database
     init_db()
     logger.info("Database initialized")
-
-    # Start background model download
-    async def _download_task():
-        try:
-            await ai_manager.download_models()
-        except Exception as e:
-            logger.error("Model download failed: %s", e)
-    asyncio.create_task(_download_task())
 
     # Run integrity check on all workspaces
     try:
@@ -73,7 +64,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="MediaVault",
-    description="Local media file management dashboard with AI-powered tagging",
+    description="Local media file management dashboard",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -93,13 +84,12 @@ app.add_middleware(
 # ── Register Routers ──
 app.include_router(files.router)
 app.include_router(tags.router)
-app.include_router(ai.router)
 
 
 # ── WebSocket ──
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time file change notifications and AI progress."""
+    """WebSocket endpoint for real-time file change notifications."""
     await ws_manager.connect(websocket)
     try:
         while True:

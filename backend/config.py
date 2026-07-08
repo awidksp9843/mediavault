@@ -38,14 +38,6 @@ if not LOG_DIR.is_absolute():
     LOG_DIR = PROJECT_ROOT / LOG_DIR
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── AI ──
-_model_cache = os.getenv("AI_MODEL_CACHE_DIR", "./data/ai_models")
-AI_MODEL_CACHE_DIR = Path(_model_cache)
-if not AI_MODEL_CACHE_DIR.is_absolute():
-    AI_MODEL_CACHE_DIR = PROJECT_ROOT / AI_MODEL_CACHE_DIR
-AI_MODEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-AI_BATCH_SIZE_DEFAULT = int(os.getenv("AI_BATCH_SIZE_DEFAULT", "1"))
-
 # ── Supported Extensions ──
 SUPPORTED_IMAGE_EXTENSIONS = set(
     os.getenv(
