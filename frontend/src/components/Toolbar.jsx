@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star, Tag, Sparkles } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star, Tag, Sparkles, X } from 'lucide-react'
 import useStore from '../store/useStore'
 import { addTags, autoTagFiles, autoTagAllFiles } from '../api'
 
@@ -14,8 +14,15 @@ export default function Toolbar({ onRefresh }) {
   } = useStore()
 
   const autoTagProgress = useStore(s => s.autoTagProgress)
-  const [showTagInput, setShowTagInput] = useState(false)
+  const [showBatchTagInput, setShowBatchTagInput] = useState(false)
   const [batchTagText, setBatchTagText] = useState('')
+  const [singleTagText, setSingleTagText] = useState('')
+
+  const selectedFile = useMemo(() => {
+    if (selectedFileIds.size !== 1) return null
+    const id = Array.from(selectedFileIds)[0]
+    return files.find(f => f.id === id) || null
+  }, [selectedFileIds, files])
 
   const handleBatchTag = async () => {
     const tags = batchTagText.split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
@@ -24,7 +31,7 @@ export default function Toolbar({ onRefresh }) {
       const fileIds = Array.from(selectedFileIds)
       await addTags(fileIds, tags)
       setBatchTagText('')
-      setShowTagInput(false)
+      setShowBatchTagInput(false)
     } catch (e) {
       console.error('Batch tag failed', e)
     }
@@ -49,18 +56,73 @@ export default function Toolbar({ onRefresh }) {
     }
   }
 
+  const handleSingleAddTag = async () => {
+    const tag = singleTagText.trim().toLowerCase()
+    if (!tag || !selectedFile) return
+    const currentTags = selectedFile.tags || []
+    if (currentTags.includes(tag)) { setSingleTagText(''); return }
+    try {
+      await addTags([selectedFile.id], [tag])
+      const updated = [...currentTags, tag]
+      useStore.setState(s => ({
+        files: s.files.map(f => f.id === selectedFile.id ? { ...f, tags: updated } : f),
+        modalFile: s.modalFile?.id === selectedFile.id ? { ...s.modalFile, tags: updated } : s.modalFile,
+      }))
+      setSingleTagText('')
+    } catch (e) {
+      console.error('Failed to add tag', e)
+    }
+  }
+
+  const handleSingleRemoveTag = async (tag) => {
+    if (!selectedFile) return
+    try {
+      await addTags([selectedFile.id], [tag], 'remove')
+      const updated = (selectedFile.tags || []).filter(t => t !== tag)
+      useStore.setState(s => ({
+        files: s.files.map(f => f.id === selectedFile.id ? { ...f, tags: updated } : f),
+        modalFile: s.modalFile?.id === selectedFile.id ? { ...s.modalFile, tags: updated } : s.modalFile,
+      }))
+    } catch (e) {
+      console.error('Failed to remove tag', e)
+    }
+  }
+
   return (
     <div className="toolbar">
       <div className="toolbar-left">
         <span className="toolbar-count">{totalCount}개 파일</span>
-        {selectedFileIds.size > 0 && (
+        {selectedFile && (
+          <>
+            <div className="toolbar-divider" />
+            <div className="toolbar-single-tags">
+              {(selectedFile.tags || []).map(tag => (
+                <span key={tag} className="tag-chip-sm-bar">
+                  {tag}
+                  <button className="tag-chip-sm-remove" onClick={() => handleSingleRemoveTag(tag)}>
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+              <input
+                className="tag-input-bar"
+                type="text"
+                placeholder={selectedFile.tags?.length ? '' : '태그 추가...'}
+                value={singleTagText}
+                onChange={(e) => setSingleTagText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSingleAddTag() }}
+              />
+            </div>
+          </>
+        )}
+        {!selectedFile && selectedFileIds.size > 0 && (
           <>
             <span className="toolbar-selected">{selectedFileIds.size}개 선택됨</span>
             <div className="toolbar-divider" />
-            <button className={`btn-icon ${showTagInput ? 'active' : ''}`} onClick={() => setShowTagInput(!showTagInput)} title="태그 추가">
+            <button className={`btn-icon ${showBatchTagInput ? 'active' : ''}`} onClick={() => setShowBatchTagInput(!showBatchTagInput)} title="태그 추가">
               <Tag size={14} />
             </button>
-            {showTagInput && (
+            {showBatchTagInput && (
               <div className="toolbar-tag-input">
                 <input
                   type="text"

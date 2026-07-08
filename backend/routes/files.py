@@ -291,6 +291,15 @@ def search_files(
             ]
             fts_file_ids = list(set(fts_file_ids + tagged_file_ids))
 
+        # LIKE fallback for partial filename matches (e.g. mid-string search)
+        like_ids = [
+            row[0] for row in db.execute(
+                text("SELECT id FROM files WHERE filename LIKE :q AND is_deleted = 0"),
+                {"q": f"%{query}%"},
+            ).fetchall()
+        ]
+        fts_file_ids = list(set(fts_file_ids + like_ids))
+
         if fts_file_ids:
             base_query = base_query.filter(File.id.in_(fts_file_ids))
         else:

@@ -6,17 +6,25 @@ import { getThumbnailUrl } from '../api'
 
 const ROW_HEIGHT = 48
 
-const RowComponent = ({ index, style, files, selectedFileIds, thumbnails, toggleSelectFile, openModal, showContextMenu }) => {
+const RowComponent = ({ index, style, files, selectedFileIds, thumbnails, selectSingleFile, toggleSelectFile, openModal, showContextMenu }) => {
   const file = files[index]
   if (!file) return null
   const isSelected = selectedFileIds.has(file.id)
   const thumbUrl = thumbnails[file.id]
 
+  const handleClick = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      toggleSelectFile(file.id)
+    } else {
+      selectSingleFile(file.id)
+    }
+  }
+
   return (
     <div
       style={style}
       className={`file-row ${isSelected ? 'selected' : ''}`}
-      onClick={() => toggleSelectFile(file.id)}
+      onClick={handleClick}
       onDoubleClick={() => openModal(file)}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -49,7 +57,7 @@ const RowComponent = ({ index, style, files, selectedFileIds, thumbnails, toggle
 }
 
 export default function FileListView({ files, onLoadMore, hasMore }) {
-  const { toggleSelectFile, selectedFileIds, openModal, showContextMenu } = useStore()
+  const { selectSingleFile, toggleSelectFile, selectedFileIds, openModal, showContextMenu } = useStore()
   const [containerHeight, setContainerHeight] = useState(600)
   const [thumbnails, setThumbnails] = useState({})
 
@@ -100,6 +108,7 @@ export default function FileListView({ files, onLoadMore, hasMore }) {
           files,
           selectedFileIds,
           thumbnails,
+          selectSingleFile,
           toggleSelectFile,
           openModal,
           showContextMenu,

@@ -17,6 +17,13 @@ const useStore = create((set, get) => ({
   appendFiles: (files, nextCursor) =>
     set((state) => ({ files: [...state.files, ...files], nextCursor })),
   setLoadingFiles: (v) => set({ isLoadingFiles: v }),
+  selectSingleFile: (id) =>
+    set((state) => {
+      if (state.selectedFileIds.has(id) && state.selectedFileIds.size === 1) {
+        return { selectedFileIds: new Set() }
+      }
+      return { selectedFileIds: new Set([id]) }
+    }),
   toggleSelectFile: (id) =>
     set((state) => {
       const next = new Set(state.selectedFileIds)

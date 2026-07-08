@@ -5,7 +5,7 @@ import FileGrid from './components/FileGrid'
 import FileListView from './components/FileList'
 import MediaModal from './components/MediaModal'
 import ContextMenu from './components/ContextMenu'
-import { fetchFiles, searchFiles } from './api'
+import { fetchFiles, searchFiles, deleteFile } from './api'
 import useStore from './store/useStore'
 
 export default function App() {
@@ -159,6 +159,26 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    const handleKeyDown = async (e) => {
+      if (e.key !== 'Delete' || e.repeat) return
+      const state = useStore.getState()
+      if (state.modalFile) return
+      const ids = Array.from(state.selectedFileIds)
+      if (ids.length === 0) return
+      if (!window.confirm(`${ids.length}개 파일을 삭제하시겠습니까?`)) return
+      for (const id of ids) {
+        try { await deleteFile(id) } catch {}
+      }
+      useStore.setState({
+        selectedFileIds: new Set(),
+        files: useStore.getState().files.filter(f => !ids.includes(f.id)),
+      })
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const hasMore = nextCursor != null
 
   return (
@@ -182,11 +202,6 @@ export default function App() {
                   자동 태깅 중... {autoTagProgress.current} / {autoTagProgress.total}
                   {autoTagProgress.filename && ` (${autoTagProgress.filename})`}
                 </div>
-                {autoTagProgress.tags?.length > 0 && (
-                  <div className="auto-tag-tags">
-                    {autoTagProgress.tags.map(t => <span key={t} className="tag-chip-sm">{t}</span>)}
-                  </div>
-                )}
                 <div className="auto-tag-bar">
                   <div className="auto-tag-fill" style={{ width: `${(autoTagProgress.current / autoTagProgress.total) * 100}%` }} />
                 </div>

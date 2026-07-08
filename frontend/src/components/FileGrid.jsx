@@ -8,12 +8,20 @@ const CARD_WIDTH = 180
 const CARD_HEIGHT = 200
 const GAP = 8
 
-const CellComponent = ({ columnIndex, rowIndex, style, files, columnCount, selectedFileIds, thumbnails, toggleSelectFile, openModal, showContextMenu }) => {
+const CellComponent = ({ columnIndex, rowIndex, style, files, columnCount, selectedFileIds, thumbnails, selectSingleFile, toggleSelectFile, openModal, showContextMenu }) => {
   const index = rowIndex * columnCount + columnIndex
   if (index >= files.length) return null
   const file = files[index]
   const isSelected = selectedFileIds.has(file.id)
   const thumbUrl = thumbnails[file.id]
+
+  const handleClick = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      toggleSelectFile(file.id)
+    } else {
+      selectSingleFile(file.id)
+    }
+  }
 
   return (
     <div
@@ -25,7 +33,7 @@ const CellComponent = ({ columnIndex, rowIndex, style, files, columnCount, selec
         height: style.height - GAP,
       }}
       className={`file-card ${isSelected ? 'selected' : ''}`}
-      onClick={() => toggleSelectFile(file.id)}
+      onClick={handleClick}
       onDoubleClick={() => openModal(file)}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -56,7 +64,7 @@ const CellComponent = ({ columnIndex, rowIndex, style, files, columnCount, selec
 }
 
 export default function FileGrid({ files, onLoadMore, hasMore }) {
-  const { toggleSelectFile, selectedFileIds, openModal, showContextMenu } = useStore()
+  const { selectSingleFile, toggleSelectFile, selectedFileIds, openModal, showContextMenu } = useStore()
   const containerRef = useRef(null)
   const [containerWidth, setContainerWidth] = useState(800)
   const [containerHeight, setContainerHeight] = useState(600)
@@ -114,6 +122,7 @@ export default function FileGrid({ files, onLoadMore, hasMore }) {
           columnCount,
           selectedFileIds,
           thumbnails,
+          selectSingleFile,
           toggleSelectFile,
           openModal,
           showContextMenu,

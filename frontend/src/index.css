@@ -739,6 +739,53 @@ body {
 
 .toolbar-tag-input input:focus { border-color: var(--accent-hover); box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.2); }
 
+.toolbar-single-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.tag-chip-sm-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 6px 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tag-chip-sm-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.tag-chip-sm-remove:hover { color: #fff; }
+
+.tag-input-bar {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  outline: none;
+  min-width: 60px;
+  flex: 1;
+}
+
+.tag-input-bar::placeholder { color: var(--text-disabled); }
+
 /* ── Auto-tag Banner ── */
 .auto-tag-banner {
   background: linear-gradient(90deg, #7c3aed, #5b8def);
