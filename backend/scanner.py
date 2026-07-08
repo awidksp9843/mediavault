@@ -15,7 +15,7 @@ from backend.config import (
     ALL_SUPPORTED_EXTENSIONS, get_media_type, logger,
     SUPPORTED_IMAGE_EXTENSIONS, SUPPORTED_VIDEO_EXTENSIONS,
 )
-from backend.database import File, Workspace, SessionLocal
+from backend.database import File, FileTag, Tag, Workspace, SessionLocal
 from backend.thumbnail_gen.generator import generate_thumbnail
 from backend.websocket_manager import ws_manager
 
@@ -163,6 +163,24 @@ def scan_file(file_path: Path, workspace: Workspace, db: Session) -> File | None
         db.add(file_record)
         db.commit()
         db.refresh(file_record)
+
+        # Restore tags/favorite from XMP metadata written by ExifTool
+        from backend.exiftool_worker import read_xmp_metadata
+        xmp = read_xmp_metadata(file_path)
+        if xmp:
+            tags_str = xmp.get("tags", "")
+            if tags_str:
+                for tag_name in (t.strip().lower() for t in tags_str.split(",") if t.strip()):
+                    tag = db.query(Tag).filter(Tag.name == tag_name).first()
+                    if not tag:
+                        tag = Tag(name=tag_name)
+                        db.add(tag)
+                        db.flush()
+                    db.add(FileTag(file_id=file_record.id, tag_id=tag.id, source="manual"))
+            if xmp.get("is_favorite"):
+                file_record.is_favorite = True
+            db.commit()
+
         return file_record
 
     except Exception as e:

@@ -23,9 +23,8 @@ export async function deleteWorkspace(workspaceId) {
   return data
 }
 
-export async function fetchFiles(workspaceId, { cursor, limit = 50, sortBy = 'media_created_at', sortOrder = 'desc', mediaType, folder, isFavorite } = {}) {
-  const params = { workspace_id: workspaceId, limit, sort_by: sortBy, sort_order: sortOrder }
-  if (cursor != null) params.cursor = cursor
+export async function fetchFiles(workspaceId, { sortBy = 'media_created_at', sortOrder = 'desc', mediaType, folder, isFavorite } = {}) {
+  const params = { workspace_id: workspaceId, sort_by: sortBy, sort_order: sortOrder }
   if (mediaType) params.media_type = mediaType
   if (folder !== undefined) params.folder = folder
   if (isFavorite === true) params.is_favorite = true
@@ -78,6 +77,11 @@ export async function autoTagFiles(fileIds) {
 
 export async function autoTagAllFiles(workspaceId) {
   const { data } = await api.post('/api/files/auto-tag-all', { workspace_id: workspaceId })
+  return data
+}
+
+export async function smartTagFile(fileId) {
+  const { data } = await api.post(`/api/files/${fileId}/auto-tag-smart`)
   return data
 }
 

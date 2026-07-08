@@ -9,13 +9,10 @@ const useStore = create((set, get) => ({
 
   // Files
   files: [],
-  nextCursor: null,
   totalCount: 0,
   isLoadingFiles: false,
   selectedFileIds: new Set(),
-  setFiles: (files, nextCursor, totalCount) => set({ files, nextCursor, totalCount }),
-  appendFiles: (files, nextCursor) =>
-    set((state) => ({ files: [...state.files, ...files], nextCursor })),
+  setFiles: (files, totalCount) => set({ files, totalCount }),
   setLoadingFiles: (v) => set({ isLoadingFiles: v }),
   selectSingleFile: (id) =>
     set((state) => {
@@ -66,6 +63,10 @@ const useStore = create((set, get) => ({
   // Folders
   folders: [],
   setFolders: (folders) => set({ folders }),
+
+  // Adding workspace
+  isAddingWorkspace: false,
+  setIsAddingWorkspace: (v) => set({ isAddingWorkspace: v }),
 
   // WebSocket connection status
   wsConnected: false,

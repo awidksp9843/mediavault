@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Grid } from 'react-window'
 import { Star, Play, Image } from 'lucide-react'
 import useStore from '../store/useStore'
@@ -63,7 +63,7 @@ const CellComponent = ({ columnIndex, rowIndex, style, files, columnCount, selec
   )
 }
 
-export default function FileGrid({ files, onLoadMore, hasMore }) {
+export default function FileGrid({ files }) {
   const { selectSingleFile, toggleSelectFile, selectedFileIds, openModal, showContextMenu } = useStore()
   const containerRef = useRef(null)
   const [containerWidth, setContainerWidth] = useState(800)
@@ -94,15 +94,6 @@ export default function FileGrid({ files, onLoadMore, hasMore }) {
   const columnCount = Math.max(1, Math.floor((containerWidth - GAP) / (CARD_WIDTH + GAP)))
   const rowCount = Math.max(0, Math.ceil(files.length / columnCount))
 
-  const handleScroll = useCallback(({ scrollDirection, scrollOffset, scrollUpdateWasRequested }) => {
-    if (!scrollUpdateWasRequested && hasMore) {
-      const totalHeight = rowCount * (CARD_HEIGHT + GAP)
-      if (scrollOffset + containerHeight * 0.8 >= totalHeight) {
-        onLoadMore?.()
-      }
-    }
-  }, [hasMore, rowCount, containerHeight, onLoadMore])
-
   if (files.length === 0) return null
 
   return (
@@ -115,7 +106,6 @@ export default function FileGrid({ files, onLoadMore, hasMore }) {
         rowCount={rowCount}
         rowHeight={CARD_HEIGHT + GAP}
         overscanCount={3}
-        onScroll={handleScroll}
         cellComponent={CellComponent}
         cellProps={{
           files,

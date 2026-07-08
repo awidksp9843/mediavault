@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Download, Star } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Download, Star, Sparkles } from 'lucide-react'
 import useStore from '../store/useStore'
-import { getMediaUrl, toggleFavorite, addTags } from '../api'
+import { getMediaUrl, toggleFavorite, addTags, smartTagFile } from '../api'
 
 export default function MediaModal() {
   const { modalFile, closeModal, files } = useStore()
   const [imgError, setImgError] = useState(false)
   const [tagInput, setTagInput] = useState('')
   const [localTags, setLocalTags] = useState([])
+  const [smartTagging, setSmartTagging] = useState(false)
 
   useEffect(() => {
     setImgError(false)
@@ -52,6 +53,26 @@ export default function MediaModal() {
       })
     } catch (e) {
       console.error('Failed to toggle favorite', e)
+    }
+  }
+
+  const handleSmartTag = async () => {
+    if (!modalFile || smartTagging) return
+    setSmartTagging(true)
+    try {
+      const res = await smartTagFile(modalFile.id)
+      if (res.tags) {
+        const updated = res.tags
+        setLocalTags(updated)
+        useStore.setState(s => ({
+          files: s.files.map(f => f.id === modalFile.id ? { ...f, tags: updated } : f),
+          modalFile: { ...modalFile, tags: updated },
+        }))
+      }
+    } catch (e) {
+      console.error('Smart tag failed', e)
+    } finally {
+      setSmartTagging(false)
     }
   }
 
@@ -104,6 +125,11 @@ export default function MediaModal() {
             <a href={mediaUrl} download={modalFile.filename} className="btn-icon" title="다운로드">
               <Download size={18} />
             </a>
+            {modalFile.media_type === 'image' && (
+              <button className="btn-icon" onClick={handleSmartTag} disabled={smartTagging} title="자동 태깅 (YOLO+BLIP)">
+                <Sparkles size={18} className={smartTagging ? 'spin' : ''} />
+              </button>
+            )}
             <button className="btn-icon" onClick={closeModal} title="닫기">
               <X size={20} />
             </button>

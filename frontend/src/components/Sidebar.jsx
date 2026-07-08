@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { FolderOpen, Folder, Plus, Trash2, HardDrive, Search, X } from 'lucide-react'
 import { fetchWorkspaces, createWorkspace, deleteWorkspace, fetchFolders } from '../api'
 import useStore from '../store/useStore'
@@ -9,27 +9,14 @@ export default function Sidebar() {
     folders, setFolders, filterFolder, setFilterFolder, searchQuery, setSearchQuery,
   } = useStore()
 
+  const isAddingWorkspace = useStore(s => s.isAddingWorkspace)
+  const setIsAddingWorkspace = useStore(s => s.setIsAddingWorkspace)
   const [showAdd, setShowAdd] = useState(false)
   const [newPath, setNewPath] = useState('')
-  const fileInputRef = useRef(null)
-
-  const handleBrowse = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFolderSelect = (e) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      const f = files[0]
-      if (f.path) {
-        setNewPath(f.path.substring(0, f.path.lastIndexOf('\\')))
-      }
-    }
-    e.target.value = ''
-  }
 
   const handleAddWorkspace = async () => {
     if (!newPath.trim()) return
+    setIsAddingWorkspace(true)
     try {
       const ws = await createWorkspace(newPath.trim())
       setNewPath('')
@@ -39,6 +26,7 @@ export default function Sidebar() {
     } catch (e) {
       console.error('Failed to create workspace', e)
       alert('워크스페이스를 추가할 수 없습니다: ' + (e.response?.data?.detail || e.message))
+      setIsAddingWorkspace(false)
     }
   }
 
@@ -83,19 +71,23 @@ export default function Sidebar() {
 
       {showAdd && (
         <div className="sidebar-add">
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input
-              type="text"
-              placeholder="폴더 경로 (예: C:\Users\...)"
-              value={newPath}
-              onChange={(e) => setNewPath(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddWorkspace()}
-              style={{ flex: 1, minWidth: 0 }}
-            />
-            <button className="btn btn-secondary btn-sm" onClick={handleBrowse}>탐색</button>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={handleAddWorkspace}>추가</button>
-          <input ref={fileInputRef} type="file" webkitdirectory="" directory="" style={{ display: 'none' }} onChange={handleFolderSelect} />
+          <input
+            type="text"
+            placeholder="폴더 경로 (예: C:\Users\...)"
+            value={newPath}
+            onChange={(e) => setNewPath(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !isAddingWorkspace && handleAddWorkspace()}
+            disabled={isAddingWorkspace}
+          />
+          <button className="btn btn-primary btn-sm" onClick={handleAddWorkspace} disabled={isAddingWorkspace}>
+            {isAddingWorkspace ? '스캔 중...' : '추가'}
+          </button>
+        </div>
+      )}
+      {isAddingWorkspace && (
+        <div className="sidebar-scanning">
+          <div className="spinner-sm" />
+          <span>파일 검색 중...</span>
         </div>
       )}
 

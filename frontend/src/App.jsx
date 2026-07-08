@@ -10,7 +10,7 @@ import useStore from './store/useStore'
 
 export default function App() {
   const {
-    activeWorkspaceId, files, setFiles, appendFiles, nextCursor,
+    activeWorkspaceId, files, setFiles,
     isLoadingFiles, setLoadingFiles, totalCount, setScanProgress,
     sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, searchQuery,
     viewMode, modalFile, scanProgress, autoTagProgress, setAutoTagProgress,
@@ -18,14 +18,12 @@ export default function App() {
 
   const loadingRef = useRef(false)
 
-  const loadFiles = useCallback(async (append = false) => {
+  const loadFiles = useCallback(async () => {
     if (!activeWorkspaceId || loadingRef.current) return
     loadingRef.current = true
     setLoadingFiles(true)
     try {
-      const cursor = append ? nextCursor : undefined
       const params = {
-        cursor,
         sortBy,
         sortOrder,
         mediaType: filterMediaType,
@@ -33,18 +31,14 @@ export default function App() {
         isFavorite: filterFavorites || undefined,
       }
       const result = await fetchFiles(activeWorkspaceId, params)
-      if (append) {
-        appendFiles(result.files, result.next_cursor)
-      } else {
-        setFiles(result.files, result.next_cursor, result.total_count)
-      }
+      setFiles(result.files, result.total_count)
     } catch (e) {
       console.error('Failed to load files', e)
     } finally {
       setLoadingFiles(false)
       loadingRef.current = false
     }
-  }, [activeWorkspaceId, nextCursor, sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, setFiles, appendFiles, setLoadingFiles])
+  }, [activeWorkspaceId, sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, setFiles, setLoadingFiles])
 
   const handleSearch = useCallback(async () => {
     if (!activeWorkspaceId || !searchQuery.trim()) {
@@ -74,12 +68,6 @@ export default function App() {
     }
   }, [activeWorkspaceId, sortBy, sortOrder, filterMediaType, filterFavorites, filterFolder, searchQuery])
 
-  const handleLoadMore = useCallback(() => {
-    if (nextCursor && !isLoadingFiles) {
-      loadFiles(true)
-    }
-  }, [nextCursor, isLoadingFiles, loadFiles])
-
   useEffect(() => {
     let ws = null
     let reconnectTimer = null
@@ -102,6 +90,7 @@ export default function App() {
               setScanProgress(data)
             } else if (type === 'scan_complete') {
               setScanProgress(null)
+              useStore.setState({ isAddingWorkspace: false })
               loadFiles()
             } else if (type === 'auto_tag_started') {
               setAutoTagProgress({ current: 0, total: data.total })
@@ -161,9 +150,17 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = async (e) => {
-      if (e.key !== 'Delete' || e.repeat) return
+      if (e.repeat) return
       const state = useStore.getState()
       if (state.modalFile) return
+
+      if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        state.selectAll()
+        return
+      }
+
+      if (e.key !== 'Delete') return
       const ids = Array.from(state.selectedFileIds)
       if (ids.length === 0) return
       if (!window.confirm(`${ids.length}개 파일을 삭제하시겠습니까?`)) return
@@ -178,8 +175,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
-
-  const hasMore = nextCursor != null
 
   return (
     <div className="app">
@@ -221,9 +216,9 @@ export default function App() {
               <p className="text-sm">워크스페이스를 추가하세요</p>
             </div>
           ) : viewMode === 'grid' ? (
-            <FileGrid files={files} onLoadMore={handleLoadMore} hasMore={hasMore} />
+            <FileGrid files={files} />
           ) : (
-            <FileListView files={files} onLoadMore={handleLoadMore} hasMore={hasMore} />
+            <FileListView files={files} />
           )}
         </div>
       </main>

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { List } from 'react-window'
 import { Star, Play, Image } from 'lucide-react'
 import useStore from '../store/useStore'
@@ -56,33 +56,24 @@ const RowComponent = ({ index, style, files, selectedFileIds, thumbnails, select
   )
 }
 
-export default function FileListView({ files, onLoadMore, hasMore }) {
+export default function FileListView({ files }) {
   const { selectSingleFile, toggleSelectFile, selectedFileIds, openModal, showContextMenu } = useStore()
   const [containerHeight, setContainerHeight] = useState(600)
   const [thumbnails, setThumbnails] = useState({})
 
-  const containerRef = useCallback((node) => {
+  const containerRef = (node) => {
     if (node) {
       setContainerHeight(node.clientHeight)
     }
-  }, [])
+  }
 
   useEffect(() => {
     const map = {}
-    for (const f of files.slice(0, 50)) {
+    for (const f of files) {
       map[f.id] = getThumbnailUrl(f.id)
     }
     setThumbnails(map)
   }, [files])
-
-  const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }) => {
-    if (!scrollUpdateWasRequested && hasMore) {
-      const totalHeight = files.length * ROW_HEIGHT
-      if (scrollOffset + containerHeight * 0.8 >= totalHeight) {
-        onLoadMore?.()
-      }
-    }
-  }, [hasMore, files.length, containerHeight, onLoadMore])
 
   if (files.length === 0) return null
 
@@ -102,7 +93,6 @@ export default function FileListView({ files, onLoadMore, hasMore }) {
         rowCount={files.length}
         rowHeight={ROW_HEIGHT}
         overscanCount={10}
-        onScroll={handleScroll}
         rowComponent={RowComponent}
         rowProps={{
           files,

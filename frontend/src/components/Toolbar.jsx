@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star, Tag, Sparkles, X } from 'lucide-react'
+import { Grid3X3, List, ArrowUpDown, Filter, Image, Video, Star, Tag, Sparkles, Trash2, X } from 'lucide-react'
 import useStore from '../store/useStore'
 import { addTags, autoTagFiles, autoTagAllFiles } from '../api'
 
@@ -44,6 +44,17 @@ export default function Toolbar({ onRefresh }) {
       await autoTagFiles(fileIds)
     } catch (e) {
       console.error('Auto-tag failed', e)
+    }
+  }
+
+  const handleClearTags = async () => {
+    const n = selectedFileIds.size
+    if (n === 0) return
+    if (!window.confirm(`선택한 ${n}개 파일의 모든 태그를 삭제하시겠습니까?`)) return
+    try {
+      await addTags(Array.from(selectedFileIds), [], 'set')
+    } catch (e) {
+      console.error('Clear tags failed', e)
     }
   }
 
@@ -138,6 +149,9 @@ export default function Toolbar({ onRefresh }) {
             <div className="toolbar-divider" />
             <button className="btn-icon" onClick={handleAutoTag} disabled={!!autoTagProgress} title="자동 태깅 (YOLO)">
               <Sparkles size={14} />
+            </button>
+            <button className="btn-icon" onClick={handleClearTags} disabled={!!autoTagProgress} title="선택 파일 태그 일괄삭제">
+              <Trash2 size={14} />
             </button>
           </>
         )}

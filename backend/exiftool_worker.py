@@ -4,8 +4,10 @@ Async queue-based ExifTool process manager with atomic writes.
 Reads/writes tags (XMP-dc:subject) and favorite (XMP:Label) metadata.
 """
 import asyncio
+import json
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from backend.config import logger
@@ -70,7 +72,7 @@ def write_xmp_metadata(file_path: Path, metadata: dict) -> bool:
     try:
         blacklist.add(file_path)
 
-        temp_dir = file_path.parent
+        temp_dir = Path(tempfile.gettempdir())
         temp_path = temp_dir / f".mediavault_tmp_{file_path.name}"
 
         shutil.copy2(str(file_path), str(temp_path))
@@ -93,7 +95,7 @@ def write_xmp_metadata(file_path: Path, metadata: dict) -> bool:
 
     except Exception as e:
         logger.error("Atomic write failed for %s: %s", file_path, e)
-        temp_path = file_path.parent / f".mediavault_tmp_{file_path.name}"
+        temp_path = Path(tempfile.gettempdir()) / f".mediavault_tmp_{file_path.name}"
         temp_path.unlink(missing_ok=True)
         return False
 

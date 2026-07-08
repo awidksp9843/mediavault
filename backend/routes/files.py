@@ -19,7 +19,7 @@ from backend.exiftool_worker import exiftool_queue
 from backend.thumbnail_gen.generator import get_thumbnail_absolute_path, generate_thumbnail
 from backend.scanner import scan_workspace
 from backend.websocket_manager import ws_manager
-from backend.auto_tag import auto_tag_files, yolo_model
+from backend.auto_tag import auto_tag_files, smart_tag_single_file
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api", tags=["files"])
@@ -156,8 +156,6 @@ async def rescan_workspace(workspace_id: int, db: Session = Depends(get_db)):
 @router.get("/files")
 def list_files(
     workspace_id: int,
-    cursor: int | None = Query(None, description="Last file ID for cursor pagination"),
-    limit: int = Query(50, ge=1, le=200),
     sort_by: str = Query("media_created_at", regex="^(filename|size|media_created_at|extension)$"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     media_type: str | None = Query(None, regex="^(image|video)$"),
@@ -165,7 +163,7 @@ def list_files(
     is_favorite: bool | None = Query(None, description="Filter by favorite status"),
     db: Session = Depends(get_db),
 ):
-    """List files with cursor-based pagination to avoid large offset DB locks."""
+    """List all files in a workspace (no pagination)."""
     query = db.query(File).filter(
         File.workspace_id == workspace_id,
         File.is_deleted == False,
@@ -179,39 +177,20 @@ def list_files(
 
     if folder is not None:
         if folder == "":
-            # Root folder: files without "/" in relative_path
             query = query.filter(~File.relative_path.contains("/"))
         else:
-            # Specific folder prefix
             query = query.filter(File.relative_path.like(f"{folder}/%"))
-            # Exclude files in deeper subfolders
-            # Only show direct children of this folder
             query = query.filter(
                 ~File.relative_path.like(f"{folder}/%/%")
             )
 
-    # Total count (before cursor filter)
-    total = query.count()
-
-    # Sort
     sort_col = getattr(File, sort_by, File.media_created_at)
     if sort_order == "desc":
         query = query.order_by(sort_col.desc(), File.id.desc())
     else:
         query = query.order_by(sort_col.asc(), File.id.asc())
 
-    # Cursor pagination
-    if cursor is not None:
-        if sort_order == "desc":
-            query = query.filter(File.id < cursor)
-        else:
-            query = query.filter(File.id > cursor)
-
-    files = query.limit(limit + 1).all()
-
-    has_more = len(files) > limit
-    if has_more:
-        files = files[:limit]
+    files = query.all()
 
     result_files = []
     for f in files:
@@ -241,8 +220,7 @@ def list_files(
 
     return {
         "files": result_files,
-        "next_cursor": files[-1].id if has_more and files else None,
-        "total_count": total,
+        "total_count": len(result_files),
     }
 
 
@@ -532,6 +510,15 @@ async def auto_tag_all(body: AutoTagAllRequest, db: Session = Depends(get_db)):
         return {"message": "No image files to tag", "file_count": 0}
     asyncio.create_task(auto_tag_files(image_ids))
     return {"message": "Auto-tag started", "file_count": len(image_ids)}
+
+@router.post("/files/{file_id}/auto-tag-smart")
+async def auto_tag_smart(file_id: int):
+    """YOLO (objects) + BLIP (scene) on a single image file."""
+    result = await smart_tag_single_file(file_id)
+    if "error" in result:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 # ── Folder structure endpoint ──

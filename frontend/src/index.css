@@ -89,6 +89,27 @@ body {
 
 .sidebar-add input:focus { border-color: var(--accent); }
 
+.sidebar-scanning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-tertiary);
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
 .sidebar-workspaces {
   padding: 6px 0;
   max-height: 200px;
